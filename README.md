@@ -7,6 +7,7 @@ CSVWhiz Bot is an interactive tool that allows users to interact with CSV files 
 - **Natural Language Interaction:** Use natural language queries to extract information from CSV files.
 - **Powerful NLP Models:** Leverage Llama 2 for language understanding and Sentence Transformers for sentence embedding.
 - **Efficient Transformers:** Utilize CTransformers for optimized model inference.
+- **AutoML Capabilities:** Integrates automated machine learning (AutoML) using TPOT for both classification and regression tasks.
 - **User-Friendly Interface:** A Streamlit-based UI for easy interaction.
 
 ## Installation
@@ -52,6 +53,7 @@ Follow these steps to set up the CSVWhiz Bot on your local machine:
 - **Sentence Transformers:** Efficient sentence embedding for semantic similarity.
 - **CTransformers:** Optimized transformer inference.
 - **Langchain:** Chain of language models for complex NLP tasks.
+- **TPOT:** Automated machine learning (AutoML) library for optimizing machine learning pipelines.
 - **Streamlit:** Fast way to build and share data apps.
 
 Happy querying with CSVWhiz Bot!
