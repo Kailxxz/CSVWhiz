@@ -1,11 +1,6 @@
 streamlit
-pypdf
-langchain
-torch
-accelerate
-bitsandbytes
-transformers
-sentence_transformers
-faiss_cpu
-streamlit-chat
-langchain_community
+pandas
+seaborn
+scikit-learn
+langchain-community
+tpot
