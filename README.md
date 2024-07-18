@@ -1,6 +1,6 @@
 # CSVWhiz Bot
 
-CSVWhiz Bot is an interactive tool that allows users to interact with CSV files using natural language. It leverages the power of Llama 2, Sentence Transformers, CTransformers, Langchain, and Streamlit to provide a seamless and intuitive user experience.
+CSVWhiz Bot is an interactive tool which streamlines CSV file management with natural language, featuring scaling, AutoML capabilities, and advanced visualization tools. Powered by Llama 2, Sentence Transformers, CTransformers, Langchain, and Streamlit, it ensures intuitive and efficient data handling.
 
 ## Features
 
