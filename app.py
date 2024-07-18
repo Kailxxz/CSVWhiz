@@ -2,19 +2,12 @@ import streamlit as st
 import tempfile
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, mean_squared_error
-from sklearn.linear_model import LogisticRegression, LinearRegression, Ridge, Lasso
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC, SVR
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import PolynomialFeatures, StandardScaler, MinMaxScaler, RobustScaler, LabelEncoder
-from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
-
+from sklearn.compose import ColumnTransformer
+from tpot import TPOTClassifier, TPOTRegressor
 from langchain_community.document_loaders import CSVLoader
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -23,24 +16,6 @@ from langchain.chains import ConversationalRetrievalChain
 
 DB_FAISS_PATH = 'vectorstore/db_faiss'
 MODEL_PATH = r'C:\Users\91638\Desktop\Training\Data Analytics\Projects\CSVWhiz\llama-2-7b-chat.ggmlv3.q4_0.bin'
-
-# Define available models for classification
-classification_models = {
-    "Logistic Regression": LogisticRegression(),
-    "Decision Tree": DecisionTreeClassifier(),
-    "Random Forest": RandomForestClassifier(),
-    "Support Vector Machines (SVM)": SVC(),
-    "k-Nearest Neighbors (k-NN)": KNeighborsClassifier()
-}
-
-# Define available models for regression
-regression_models = {
-    "Linear Regression": LinearRegression(),
-    "Polynomial Regression": LinearRegression(),
-    "Ridge Regression": Ridge(),
-    "Lasso Regression": Lasso(),
-    "Support Vector Regression (SVR)": SVR()
-}
 
 @st.cache_resource
 def load_llm(model_path):
@@ -52,39 +27,9 @@ def load_llm(model_path):
     )
     return llm
 
-def train_classification_models(X_train, X_test, y_train, y_test):
-    results = {}
-    for model_name, model in classification_models.items():
-        model.fit(X_train, y_train)
-        y_pred = model.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
-        results[model_name] = {"model": model, "accuracy": accuracy}
-    return results
-
-def train_regression_models(X_train, X_test, y_train, y_test):
-    results = {}
-    for model_name, model in regression_models.items():
-        if model_name == "Polynomial Regression":
-            poly_features = PolynomialFeatures(degree=2)
-            X_train_poly = poly_features.fit_transform(X_train)
-            X_test_poly = poly_features.transform(X_test)
-            model.fit(X_train_poly, y_train)
-            y_pred = model.predict(X_test_poly)
-        else:
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
-        if "Regression" in model_name:
-            mse = mean_squared_error(y_test, y_pred)
-            results[model_name] = {"model": model, "mse": mse}
-        else:
-            mse = None
-            results[model_name] = {"model": model, "y_pred": y_pred}
-    return results
-
 def preprocess_data(X_train, X_test, scale_option):
     numerical_features = X_train.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    
-    # Define preprocessing steps
+
     if scale_option == "Standard Scaler":
         scaler = StandardScaler()
     elif scale_option == "Min-Max Scaler":
@@ -93,8 +38,8 @@ def preprocess_data(X_train, X_test, scale_option):
         scaler = RobustScaler()
 
     numeric_transformer = Pipeline(steps=[
-        ('imputer', SimpleImputer(strategy='mean')),  # Impute missing values with mean
-        ('scaler', scaler)  # Scale features
+        ('imputer', SimpleImputer(strategy='mean')),
+        ('scaler', scaler)
     ])
 
     preprocessor = ColumnTransformer(
@@ -106,38 +51,6 @@ def preprocess_data(X_train, X_test, scale_option):
     X_test_preprocessed = preprocessor.transform(X_test)
 
     return X_train_preprocessed, X_test_preprocessed
-
-def plot_pairplot(df):
-    st.write("Pairplot:")
-    fig = sns.pairplot(df)
-    st.pyplot(fig)
-
-def plot_heatmap(df):
-    st.write("Correlation Heatmap:")
-    numeric_df = df.select_dtypes(include=['float64', 'int64'])
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(numeric_df.corr(), annot=True, cmap='coolwarm', linewidths=.5)
-    st.pyplot()
-
-def plot_histogram(df):
-    st.write("Histogram:")
-    fig, ax = plt.subplots()
-    for col in df.columns:
-        sns.histplot(df[col], ax=ax, kde=True)
-    st.pyplot(fig)
-
-def plot_scatterplot(df):
-    st.write("Scatter Plot:")
-    columns = list(df.columns)
-    x_axis = st.selectbox("Select X-axis:", options=columns)
-    y_axis = st.selectbox("Select Y-axis:", options=columns)
-    sns.scatterplot(x=df[x_axis], y=df[y_axis])
-    st.pyplot()
-
-def plot_categorical_barplot(df):
-    st.write("Species Count:")
-    sns.countplot(x='species', data=df)
-    st.pyplot()
 
 st.title("CSVWhiz")
 st.sidebar.header("Upload Your Data")
@@ -187,26 +100,18 @@ if uploaded_file:
     st.write("Data Summary:")
     st.write(df.describe())
 
+    st.write("Pairplot:")
+    fig = sns.pairplot(df)
+    st.pyplot(fig)
+
     st.sidebar.subheader("Modeling Options")
     target = st.sidebar.selectbox("Select Target Variable", options=df.columns)
     target_type = st.sidebar.selectbox("Select Problem Type", options=["classification", "regression"])
-
     scale_data = st.sidebar.checkbox("Scale Data")
     if scale_data:
         scale_option = st.sidebar.selectbox("Select Scaling Method", ["Standard Scaler", "Min-Max Scaler", "Robust Scaler"])
     else:
         scale_option = None
-
-    st.sidebar.subheader("Visualization Options")
-    plot_options = {
-        "Pairplot": plot_pairplot,
-        "Heatmap": plot_heatmap,
-        "Histogram": plot_histogram,
-        "Scatter Plot": plot_scatterplot,
-        "Species Count": plot_categorical_barplot  # Added categorical plot option
-    }
-    default_plot = "Pairplot"
-    selected_plot = st.sidebar.selectbox("Select Plot Type", options=list(plot_options.keys()), index=0)
 
     if st.sidebar.button("Run Modeling"):
         X = df.drop(target, axis=1)
@@ -217,37 +122,22 @@ if uploaded_file:
             X_train, X_test = preprocess_data(X_train, X_test, scale_option)
 
         if target_type == "classification":
-            with st.spinner("Training classification models..."):
-                results = train_classification_models(X_train, X_test, y_train, y_test)
-            best_model_name = max(results, key=lambda x: results[x]['accuracy'])
-            best_model = results[best_model_name]
-            accuracy_percentage = best_model['accuracy'] * 100
-            st.subheader(f"Best Classification Model: {best_model_name}")
-            st.write(f"Accuracy: {accuracy_percentage:.2f}%")
+            with st.spinner("Running AutoML for classification..."):
+                tpot = TPOTClassifier(generations=5, population_size=50, verbosity=2, random_state=42)
+                tpot.fit(X_train, y_train)
+                accuracy = tpot.score(X_test, y_test)
+                st.subheader("TPOT Classification Results")
+                st.write(f"Best Model Accuracy: {accuracy:.2f}")
+                tpot.export('tpot_best_classification_pipeline.py')
         elif target_type == "regression":
-                with st.spinner("Training regression models..."):
-                    results = train_regression_models(X_train, X_test, y_train, y_test)
-                best_model_name = min(results, key=lambda x: results[x]['mse'])
-                best_model = results[best_model_name]
-                st.subheader(f"Best Regression Model: {best_model_name}")
-                st.write(f"Mean Squared Error: {best_model['mse']:.2f}")
+            with st.spinner("Running AutoML for regression..."):
+                tpot = TPOTRegressor(generations=5, population_size=50, verbosity=2, random_state=42)
+                tpot.fit(X_train, y_train)
+                mse = tpot.score(X_test, y_test)
+                st.subheader("TPOT Regression Results")
+                st.write(f"Best Model Mean Squared Error: {mse:.2f}")
+                tpot.export('tpot_best_regression_pipeline.py')
 
-    st.subheader("Data Visualizations")
-
-    # Create a layout with columns for the selected plot and default pairplot
-    plot_col, pairplot_col = st.columns(2)
-
-    # Execute the selected plot function
-    plot_function = plot_options[selected_plot]
-    with plot_col:
-        plot_function(df)
-
-    # Display the default pairplot in the other column if a different plot is selected
-    with pairplot_col:
-        if selected_plot != "Pairplot":
-            plot_pairplot(df)
-
-    # Chat with CSV Data
     st.subheader("Chat with CSV Data")
 
     response_container = st.container()
