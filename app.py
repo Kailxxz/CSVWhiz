@@ -15,7 +15,7 @@ from langchain_community.llms import CTransformers
 from langchain.chains import ConversationalRetrievalChain
 
 DB_FAISS_PATH = 'vectorstore/db_faiss'
-MODEL_PATH = r'C:\Users\91638\Desktop\Training\Data Analytics\Projects\CSVWhiz\llama-2-7b-chat.ggmlv3.q4_0.bin'
+MODEL_PATH = r'llama-2-7b-chat.ggmlv3.q4_0.bin'#MODEL PATH
 
 @st.cache_resource
 def load_llm(model_path):
